@@ -5,11 +5,13 @@ public class GameManager : MonoBehaviour
 {
     #region Singleton
     public static GameManager Instance;
+
     private void Awake()
     {
+        // basic singleton set
         if (Instance == null) Instance = this;
 
-        // Load data EARLY so UI can read highscore on its Start()
+        // load save data early so UI can read highscores in Start()
         string loadedData = SaveSystem.Load("save");
         if (!string.IsNullOrEmpty(loadedData))
             data = JsonUtility.FromJson<Data>(loadedData);
@@ -18,30 +20,34 @@ public class GameManager : MonoBehaviour
     }
     #endregion
 
-    public float currentScore = 0f;
-    public Data data;
-    public bool isPlaying = false;
+    [Header("Runtime State")]
+    public float currentScore = 0f;   // increases while playing
+    public Data data;                 // persistent data (e.g., highscore)
+    public bool isPlaying = false;    // game loop active flag
 
-    public UnityEvent onPlay = new UnityEvent();
-    public UnityEvent onGameOver = new UnityEvent();
+    [Header("Events")]
+    public UnityEvent onPlay = new UnityEvent();       // fired when game starts
+    public UnityEvent onGameOver = new UnityEvent();   // fired on game over 
 
     private void Update()
     {
+        // accumulate score only while actively playing
         if (isPlaying)
             currentScore += Time.deltaTime;
     }
 
     public void StartGame()
     {
-        onPlay.Invoke();
-        isPlaying = true;
-        currentScore = 0f;
+        onPlay.Invoke();    // notify listeners
+        isPlaying = true;   // enable scoring
+        currentScore = 0f;  // reset run score
     }
 
     public void GameOver()
     {
-        onGameOver.Invoke();
+        onGameOver.Invoke();  // first notify 
 
+        // update and save highscore if beaten
         if (data.highscore < currentScore)
         {
             data.highscore = currentScore;
@@ -49,12 +55,11 @@ public class GameManager : MonoBehaviour
             SaveSystem.Save("save", saveString);
         }
 
-        isPlaying = false;
+        isPlaying = false;    // stop scoring
 
-        // you had this twice; keeping your original behavior
-        onGameOver.Invoke();
     }
 
+    // helper display methods
     public string PrettyScore() => Mathf.RoundToInt(currentScore).ToString();
     public string PrettyHighscore() => Mathf.RoundToInt(data.highscore).ToString();
 }
