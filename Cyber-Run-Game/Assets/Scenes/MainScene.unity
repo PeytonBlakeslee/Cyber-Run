@@ -203,8 +203,8 @@ Transform:
   m_GameObject: {fileID: 129524966}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.0772, y: 0.2539, z: 0}
-  m_LocalScale: {x: 8.8944, y: 5.7786508, z: 1}
+  m_LocalPosition: {x: -0.0772, y: 0.25060415, z: 0}
+  m_LocalScale: {x: 8.8944, y: 5.783135, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -1700,8 +1700,8 @@ Transform:
   m_GameObject: {fileID: 1127004348}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.0313, y: 0.5425, z: 0}
-  m_LocalScale: {x: 15.977327, y: 10.996138, z: 1}
+  m_LocalPosition: {x: 0.0313, y: 0.603, z: 0}
+  m_LocalScale: {x: 15.977327, y: 11.147884, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -2750,9 +2750,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e3012bab92f5b34189ded3e3ac0ab26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  ScoreUI: {fileID: 1110753035}
   startMenuUI: {fileID: 368574572}
   gameOverUI: {fileID: 387423338}
+  ScoreUI: {fileID: 1110753035}
   startMenuHighscoreUI: {fileID: 1976044279}
   gameOverScoreUI: {fileID: 2070064787}
   gameOverHighscoreUI: {fileID: 1729963022}
