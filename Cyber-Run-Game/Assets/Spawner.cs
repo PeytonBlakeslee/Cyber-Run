@@ -5,17 +5,29 @@ public class Spawner : MonoBehaviour
     [Header("Spawn Settings")]
     [SerializeField] private GameObject[] obstaclePrefabs;   // candidate obstacles
     [SerializeField] private Transform obstacleParent;       // where spawned obstacles live in the hierarchy
-    [SerializeField] private float obstacleSpawnTime = 3f;   // base time between spawns
+    [SerializeField] private float obstacleSpawnTime = 3f;   // base time between spawns (Normal mode)
     [Range(0, 1)] public float obstacleSpawnTimeFactor = 0.1f; // how strongly spawn time scales over run time
-    [SerializeField] private float obstacleSpeed = 7f;       // base obstacle speed
+    [SerializeField] private float obstacleSpeed = 7f;       // base obstacle speed (Normal mode)
     [Range(0, 1)] public float obstacleSpeedFactor = 0.2f;   // how strongly speed scales over run time
 
-    // scaled values computed each frame based on timeAlive
+    [Header("Hard Mode Multipliers")]
+    [Tooltip("< 1 = faster spawns (less time between obstacles) in Hard")]
+    [SerializeField] private float hardSpawnMultiplier   = 0.7f;
+    [Tooltip("> 1 = faster obstacles in Hard")]
+    [SerializeField] private float hardSpeedMultiplier   = 1.2f;
+    [Tooltip("> 1 = ramps faster over time in Hard")]
+    [SerializeField] private float hardRampMultiplier    = 1.5f;
+
+    [Header("Caps (to avoid impossible infinite scaling)")]
+    [SerializeField] private float minSpawnTime = 0.25f;  // fastest allowed spawn interval (seconds)
+    [SerializeField] private float maxObstacleSpeed = 25f; // fastest allowed obstacle speed
+
+    // scaled values computed each frame based on timeAlive + difficulty
     private float _obstacleSpawnTime;
     private float _obstacleSpeed;
 
     private float timeUntilObstacleSpawn; // per-spawn countdown
-    private float timeAlive;              // seconds since run started (starts at 1 to avoid div-by-zero)
+    private float timeAlive;              // seconds since run started
 
     private void Start()
     {
@@ -30,7 +42,7 @@ public class Spawner : MonoBehaviour
         if (!GameManager.Instance.isPlaying) return;
 
         timeAlive += Time.deltaTime;   // advance run time
-        CalculateFactors();            // update scaled spawn time and speed
+        CalculateFactors();            // update scaled spawn time and speed (with difficulty)
         SpawnLoop();                   // drive spawn cadence
     }
 
@@ -52,21 +64,47 @@ public class Spawner : MonoBehaviour
             Destroy(child.gameObject);
     }
 
-    // Recompute scaled spawn time and speed from elapsed run time
+    // Recompute scaled spawn time and speed from elapsed run time + difficulty
     private void CalculateFactors()
     {
-        // spawn interval gets shorter over time; speed increases over time
-        _obstacleSpawnTime = obstacleSpawnTime / Mathf.Pow(timeAlive, obstacleSpawnTimeFactor);
-        _obstacleSpeed = obstacleSpeed * Mathf.Pow(timeAlive, obstacleSpeedFactor);
+        // default multipliers (Normal mode = base behavior)
+        float spawnMult = 1f;
+        float speedMult = 1f;
+        float rampMult  = 1f;
+
+        // In Hard mode, make spawn interval smaller, speed higher, and ramp faster
+        if (GameManager.Instance != null &&
+            GameManager.Instance.difficulty == GameManager.DifficultyMode.Hard)
+        {
+            spawnMult = hardSpawnMultiplier;
+            speedMult = hardSpeedMultiplier;
+            rampMult  = hardRampMultiplier;
+        }
+
+        // t is basically "seconds alive" but scaled for harder ramp in Hard mode
+        float t = timeAlive * rampMult;
+
+        // base scaling: spawn interval gets shorter over time; speed increases over time
+        // use (t + 1) to keep Pow() stable and avoid issues near zero
+        float scaledSpawnDivisor = Mathf.Pow(t + 1f, obstacleSpawnTimeFactor);
+        float scaledSpeedFactor  = Mathf.Pow(t + 1f, obstacleSpeedFactor);
+
+        _obstacleSpawnTime = (obstacleSpawnTime * spawnMult) / scaledSpawnDivisor;
+        _obstacleSpeed     = (obstacleSpeed * speedMult) * scaledSpeedFactor;
+
+        // clamp so the game does not become literally impossible
+        _obstacleSpawnTime = Mathf.Max(_obstacleSpawnTime, minSpawnTime);
+        _obstacleSpeed     = Mathf.Min(_obstacleSpeed, maxObstacleSpeed);
     }
 
     // Reset run-time scaling and timers at the start of a new run
     private void ResetFactors()
     {
-        timeAlive = 1f; // start at 1 to keep Pow() stable and avoid division by zero
-        _obstacleSpawnTime = obstacleSpawnTime;
-        _obstacleSpeed = obstacleSpeed;
+        timeAlive = 0f;
         timeUntilObstacleSpawn = 0f;
+
+        // recompute scaled values immediately for the new run
+        CalculateFactors();
     }
 
     private void Spawn()

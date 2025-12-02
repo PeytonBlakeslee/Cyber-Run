@@ -5,8 +5,9 @@ using UnityEngine;
 [System.Serializable]
 public class Data
 {
-    // Highest score achieved across sessions
-    public float highscore;
+    // Highest score achieved in Normal difficulty
+    public float normalHighscore;
+
+    // Highest score achieved in Hard difficulty
+    public float hardHighscore;
 }
-
-

@@ -17,8 +17,11 @@ public class PlayerCollision : MonoBehaviour
     private void OnCollisionEnter2D(Collision2D other)
     {
         // If we hit an obstacle: disable player and trigger Game Over
-        if (other.transform.tag == "Obstacle")
+        if (other.transform.CompareTag("Obstacle"))
         {
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayDeath();
+
             gameObject.SetActive(false);
             GameManager.Instance.GameOver();
         }

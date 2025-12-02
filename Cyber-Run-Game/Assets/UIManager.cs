@@ -7,15 +7,33 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject startMenuUI;                 // start menu root
     [SerializeField] private GameObject gameOverUI;                  // game over root
     [SerializeField] private TextMeshProUGUI ScoreUI;                // in-game score text
-    [SerializeField] private TextMeshProUGUI startMenuHighscoreUI;   // highscore text under title (start menu)
     [SerializeField] private TextMeshProUGUI gameOverScoreUI;        // score label on game over
     [SerializeField] private TextMeshProUGUI gameOverHighscoreUI;    // highscore label on game over
+
+    [Header("Start Menu Highscores")]
+    [SerializeField] private TextMeshProUGUI normalHighscoreUI;      // e.g. "Normal Highscore: 0"
+    [SerializeField] private TextMeshProUGUI hardHighscoreUI;        // e.g. "Hard Highscore: 0"
+
+    [Header("Difficulty UI")]
+    [SerializeField] private TextMeshProUGUI difficultyLabelUI;      // label on the difficulty button
+
+    [Header("Info Panel")]
+    [SerializeField] private GameObject modeInfoPanel;   // panel that explains Normal vs Hard
+
+    [Header("Audio UI")]
+    [SerializeField] private TextMeshProUGUI muteLabelUI;  // label on the mute button
+
+
 
     private GameManager gm;
 
     private void Start()
     {
         gm = GameManager.Instance;
+
+        // start menu music when the scene loads (if you wired AudioManager)
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayMenuMusic();
 
         // update game over screen when the game ends
         gm.onGameOver.AddListener(ActivateGameOverUI);
@@ -25,9 +43,11 @@ public class UIManager : MonoBehaviour
         if (ScoreUI) ScoreUI.gameObject.SetActive(false);
         if (gameOverUI) gameOverUI.SetActive(false);
 
-        // populate start menu highscore once at launch
-        if (startMenuHighscoreUI)
-            startMenuHighscoreUI.text = "Highscore: " + gm.PrettyHighscore();
+        // fill start menu labels
+        RefreshStartMenuHighscores();
+        UpdateDifficultyLabel();
+        UpdateMuteLabel();
+
     }
 
     // Called by the Play button
@@ -41,21 +61,50 @@ public class UIManager : MonoBehaviour
         if (gameOverUI) gameOverUI.SetActive(false);
     }
 
+    // Called by the Difficulty button
+    public void DifficultyButtonHandler()
+    {
+        gm.ToggleDifficulty();
+        UpdateDifficultyLabel();
+        // highscores shown are per-mode, but we display both,
+        // so no need to change those here.
+    }
+
+    private void UpdateDifficultyLabel()
+    {
+        if (!difficultyLabelUI) return;
+
+        string modeText = gm.difficulty == GameManager.DifficultyMode.Hard
+            ? "Hard"
+            : "Normal";
+
+        difficultyLabelUI.text = "Difficulty: " + modeText;
+    }
+
+    // Show both highscores on the start menu
+    private void RefreshStartMenuHighscores()
+    {
+        if (normalHighscoreUI)
+            normalHighscoreUI.text = "Normal Highscore: " + gm.PrettyNormalHighscore();
+
+        if (hardHighscoreUI)
+            hardHighscoreUI.text = "Hard Highscore: " + gm.PrettyHardHighscore();
+    }
+
     // Show game over UI and fill in score labels
     public void ActivateGameOverUI()
     {
         if (gameOverUI) gameOverUI.SetActive(true);
         if (ScoreUI) ScoreUI.gameObject.SetActive(false);
 
-        gameOverScoreUI.text = "Score: " + gm.PrettyScore();
-        gameOverHighscoreUI.text = "Highscore: " + gm.PrettyHighscore();
-    }
+        if (gameOverScoreUI)
+            gameOverScoreUI.text = "Score: " + gm.PrettyScore();
 
-    // Utility hook for a "Back to Menu" button to refresh the start menu highscore label
-    public void RefreshStartMenuHighscore()
-    {
-        if (startMenuHighscoreUI)
-            startMenuHighscoreUI.text = "Highscore: " + gm.PrettyHighscore();
+        if (gameOverHighscoreUI)
+            gameOverHighscoreUI.text = "Highscore: " + gm.PrettyHighscore();
+
+        // update start menu highscores so when you go back they are fresh
+        RefreshStartMenuHighscores();
     }
 
     // Update the live score text only while the score UI is visible
@@ -64,4 +113,31 @@ public class UIManager : MonoBehaviour
         if (ScoreUI && ScoreUI.gameObject.activeSelf)
             ScoreUI.text = gm.PrettyScore();
     }
+
+    // Called by the small "?" button to show / hide the info panel
+    public void ToggleModeInfoPanel()
+    {
+    if (!modeInfoPanel) return;
+    bool newState = !modeInfoPanel.activeSelf;
+    modeInfoPanel.SetActive(newState);
+    }
+
+    // Called by the mute button
+    public void MuteButtonHandler()
+    {
+    if (AudioManager.Instance == null) return;
+
+    AudioManager.Instance.ToggleMute();
+    UpdateMuteLabel();
+    }
+
+    private void UpdateMuteLabel()
+    {
+    if (!muteLabelUI) return;
+
+    bool muted = AudioManager.Instance != null && AudioManager.Instance.IsMuted;
+    muteLabelUI.text = muted ? "Sound: Off" : "Sound: On";
+    }
+
+
 }
