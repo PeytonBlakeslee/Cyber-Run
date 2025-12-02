@@ -4,26 +4,34 @@ using TMPro;
 public class UIManager : MonoBehaviour
 {
     [Header("UI References")]
-    [SerializeField] private GameObject startMenuUI;                 // start menu root
-    [SerializeField] private GameObject gameOverUI;                  // game over root
-    [SerializeField] private TextMeshProUGUI ScoreUI;                // in-game score text
-    [SerializeField] private TextMeshProUGUI gameOverScoreUI;        // score label on game over
-    [SerializeField] private TextMeshProUGUI gameOverHighscoreUI;    // highscore label on game over
+    [SerializeField] private GameObject startMenuUI;
+    [SerializeField] private GameObject gameOverUI;
+    [SerializeField] private TextMeshProUGUI ScoreUI;
+    [SerializeField] private TextMeshProUGUI gameOverScoreUI;
+    [SerializeField] private TextMeshProUGUI gameOverHighscoreUI;
 
     [Header("Start Menu Highscores")]
-    [SerializeField] private TextMeshProUGUI normalHighscoreUI;      // e.g. "Normal Highscore: 0"
-    [SerializeField] private TextMeshProUGUI hardHighscoreUI;        // e.g. "Hard Highscore: 0"
+    [SerializeField] private TextMeshProUGUI normalHighscoreUI;
+    [SerializeField] private TextMeshProUGUI hardHighscoreUI;
 
     [Header("Difficulty UI")]
-    [SerializeField] private TextMeshProUGUI difficultyLabelUI;      // label on the difficulty button
+    [SerializeField] private TextMeshProUGUI difficultyLabelUI;
 
     [Header("Info Panel")]
-    [SerializeField] private GameObject modeInfoPanel;   // panel that explains Normal vs Hard
+    [SerializeField] private GameObject modeInfoPanel;
+    [SerializeField] private TextMeshProUGUI infoLabelUI;   // optional
 
     [Header("Audio UI")]
-    [SerializeField] private TextMeshProUGUI muteLabelUI;  // label on the mute button
+    [SerializeField] private TextMeshProUGUI muteLabelUI;
 
-
+    [Header("Stats Panel")]
+    [SerializeField] private GameObject statsPanel;
+    [SerializeField] private TextMeshProUGUI statsNormalBestText;
+    [SerializeField] private TextMeshProUGUI statsHardBestText;
+    [SerializeField] private TextMeshProUGUI statsFastestSpeedText;
+    [SerializeField] private TextMeshProUGUI statsTotalObstaclesText;
+    [SerializeField] private TextMeshProUGUI statsTotalScoreText;
+    [SerializeField] private TextMeshProUGUI statsTotalRunsText;
 
     private GameManager gm;
 
@@ -31,57 +39,63 @@ public class UIManager : MonoBehaviour
     {
         gm = GameManager.Instance;
 
-        // start menu music when the scene loads (if you wired AudioManager)
         if (AudioManager.Instance != null)
             AudioManager.Instance.PlayMenuMusic();
 
-        // update game over screen when the game ends
         gm.onGameOver.AddListener(ActivateGameOverUI);
 
-        // initial UI state: show start menu, hide gameplay + game over
-        if (startMenuUI) startMenuUI.SetActive(true);
-        if (ScoreUI) ScoreUI.gameObject.SetActive(false);
-        if (gameOverUI) gameOverUI.SetActive(false);
+        startMenuUI.SetActive(true);
+        gameOverUI.SetActive(false);
+        ScoreUI.gameObject.SetActive(false);
+        if (statsPanel) statsPanel.SetActive(false);
+        if (modeInfoPanel) modeInfoPanel.SetActive(false);
 
-        // fill start menu labels
         RefreshStartMenuHighscores();
         UpdateDifficultyLabel();
         UpdateMuteLabel();
-
     }
 
-    // Called by the Play button
+    // PLAY button
     public void PlayButtonHandler()
     {
         gm.StartGame();
 
-        // switch to gameplay HUD
-        if (startMenuUI) startMenuUI.SetActive(false);
-        if (ScoreUI) ScoreUI.gameObject.SetActive(true);
-        if (gameOverUI) gameOverUI.SetActive(false);
+        startMenuUI.SetActive(false);
+        gameOverUI.SetActive(false);
+        ScoreUI.gameObject.SetActive(true);
+        if (statsPanel) statsPanel.SetActive(false);
+        if (modeInfoPanel) modeInfoPanel.SetActive(false);
     }
 
-    // Called by the Difficulty button
+    // DIFFICULTY button
     public void DifficultyButtonHandler()
     {
         gm.ToggleDifficulty();
         UpdateDifficultyLabel();
-        // highscores shown are per-mode, but we display both,
-        // so no need to change those here.
     }
 
     private void UpdateDifficultyLabel()
     {
         if (!difficultyLabelUI) return;
 
-        string modeText = gm.difficulty == GameManager.DifficultyMode.Hard
-            ? "Hard"
-            : "Normal";
-
-        difficultyLabelUI.text = "Difficulty: " + modeText;
+        difficultyLabelUI.text =
+            "Difficulty: " + (gm.difficulty == GameManager.DifficultyMode.Hard ? "Hard" : "Normal");
     }
 
-    // Show both highscores on the start menu
+    // GAME OVER UI
+    public void ActivateGameOverUI()
+    {
+        gameOverUI.SetActive(true);
+        ScoreUI.gameObject.SetActive(false);
+        if (statsPanel) statsPanel.SetActive(false);
+
+        gameOverScoreUI.text = "Score: " + gm.PrettyScore();
+        gameOverHighscoreUI.text = "Highscore: " + gm.PrettyHighscore();
+
+        RefreshStartMenuHighscores();
+    }
+
+    // Start menu highscores
     private void RefreshStartMenuHighscores()
     {
         if (normalHighscoreUI)
@@ -91,53 +105,68 @@ public class UIManager : MonoBehaviour
             hardHighscoreUI.text = "Hard Highscore: " + gm.PrettyHardHighscore();
     }
 
-    // Show game over UI and fill in score labels
-    public void ActivateGameOverUI()
-    {
-        if (gameOverUI) gameOverUI.SetActive(true);
-        if (ScoreUI) ScoreUI.gameObject.SetActive(false);
-
-        if (gameOverScoreUI)
-            gameOverScoreUI.text = "Score: " + gm.PrettyScore();
-
-        if (gameOverHighscoreUI)
-            gameOverHighscoreUI.text = "Highscore: " + gm.PrettyHighscore();
-
-        // update start menu highscores so when you go back they are fresh
-        RefreshStartMenuHighscores();
-    }
-
-    // Update the live score text only while the score UI is visible
-    private void OnGUI()
-    {
-        if (ScoreUI && ScoreUI.gameObject.activeSelf)
-            ScoreUI.text = gm.PrettyScore();
-    }
-
-    // Called by the small "?" button to show / hide the info panel
+    // INFO button ("?")
     public void ToggleModeInfoPanel()
     {
-    if (!modeInfoPanel) return;
-    bool newState = !modeInfoPanel.activeSelf;
-    modeInfoPanel.SetActive(newState);
+        if (!modeInfoPanel) return;
+        modeInfoPanel.SetActive(!modeInfoPanel.activeSelf);
     }
 
-    // Called by the mute button
+    // MUTE button
     public void MuteButtonHandler()
     {
-    if (AudioManager.Instance == null) return;
+        if (AudioManager.Instance == null) return;
 
-    AudioManager.Instance.ToggleMute();
-    UpdateMuteLabel();
+        AudioManager.Instance.ToggleMute();
+        UpdateMuteLabel();
     }
 
     private void UpdateMuteLabel()
     {
-    if (!muteLabelUI) return;
+        if (!muteLabelUI) return;
 
-    bool muted = AudioManager.Instance != null && AudioManager.Instance.IsMuted;
-    muteLabelUI.text = muted ? "Sound: Off" : "Sound: On";
+        bool muted = AudioManager.Instance != null && AudioManager.Instance.IsMuted;
+        muteLabelUI.text = muted ? "Sound: Off" : "Sound: On";
     }
 
+    // STATS button
+    public void StatsButtonHandler()
+    {
+        statsPanel.SetActive(true);
+        UpdateStatsPanel();
+    }
 
+    public void CloseStatsPanel()
+    {
+        statsPanel.SetActive(false);
+    }
+
+    // Fill stats panel
+    private void UpdateStatsPanel()
+    {
+        statsNormalBestText.text =
+            $"Normal Best Run: {gm.PrettyNormalHighscore()}s  ({gm.PrettyNormalBestStreak()} dodged)";
+
+        statsHardBestText.text =
+            $"Hard Best Run: {gm.PrettyHardHighscore()}s  ({gm.PrettyHardBestStreak()} dodged)";
+
+        statsFastestSpeedText.text =
+            $"Fastest Speed Reached: {gm.PrettyFastestSpeedEver()}x";
+
+        statsTotalObstaclesText.text =
+            $"Obstacles Cleared (All Time): {gm.PrettyTotalObstaclesCleared()}";
+
+        statsTotalScoreText.text =
+            $"Total Score (All Time): {gm.PrettyTotalScoreEver()}";
+
+        statsTotalRunsText.text =
+            $"Total Runs Played: {gm.PrettyTotalRunsPlayed()}";
+    }
+
+    // LIVE SCORE
+    private void OnGUI()
+    {
+        if (ScoreUI.gameObject.activeSelf)
+            ScoreUI.text = gm.PrettyScore();
+    }
 }

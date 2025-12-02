@@ -151,6 +151,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3889587919431771573}
   - component: {fileID: 4937182153186188714}
+  - component: {fileID: -3775769844138066329}
   m_Layer: 8
   m_Name: Spike row Obstacle
   m_TagString: Obstacle
@@ -203,6 +204,19 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 6
+--- !u!114 &-3775769844138066329
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6343618681895065495}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab9c7f7d0ad881646b7d24b49bf6379c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleRoot
+  counted: 0
 --- !u!1 &7576906568212397211
 GameObject:
   m_ObjectHideFlags: 0

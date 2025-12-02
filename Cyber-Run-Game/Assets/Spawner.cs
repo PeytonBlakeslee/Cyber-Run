@@ -19,7 +19,7 @@ public class Spawner : MonoBehaviour
     [SerializeField] private float hardRampMultiplier    = 1.5f;
 
     [Header("Caps (to avoid impossible infinite scaling)")]
-    [SerializeField] private float minSpawnTime = 0.25f;  // fastest allowed spawn interval (seconds)
+    [SerializeField] private float minSpawnTime = 0.25f;   // fastest allowed spawn interval (seconds)
     [SerializeField] private float maxObstacleSpeed = 25f; // fastest allowed obstacle speed
 
     // scaled values computed each frame based on timeAlive + difficulty
@@ -95,6 +95,13 @@ public class Spawner : MonoBehaviour
         // clamp so the game does not become literally impossible
         _obstacleSpawnTime = Mathf.Max(_obstacleSpawnTime, minSpawnTime);
         _obstacleSpeed     = Mathf.Min(_obstacleSpeed, maxObstacleSpeed);
+
+        // report this frame's effective speed to GameManager for stats as a MULTIPLIER of base speed
+        if (GameManager.Instance != null && obstacleSpeed > 0f)
+        {
+            float speedMultiplier = _obstacleSpeed / obstacleSpeed; // 1.0 = base, 2.0 = twice as fast, etc.
+            GameManager.Instance.RegisterSpeedSample(speedMultiplier);
+        }
     }
 
     // Reset run-time scaling and timers at the start of a new run

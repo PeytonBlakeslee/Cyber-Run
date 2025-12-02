@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2490883696787057567}
   - component: {fileID: 4261722198476682803}
+  - component: {fileID: 2546842609219382624}
   m_Layer: 8
   m_Name: Projectile Obstacle
   m_TagString: Obstacle
@@ -60,6 +61,19 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 6
+--- !u!114 &2546842609219382624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 300478244992573908}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab9c7f7d0ad881646b7d24b49bf6379c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleRoot
+  counted: 0
 --- !u!1 &2489804031301519694
 GameObject:
   m_ObjectHideFlags: 0

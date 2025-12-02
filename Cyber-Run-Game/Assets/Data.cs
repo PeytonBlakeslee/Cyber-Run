@@ -5,9 +5,19 @@ using UnityEngine;
 [System.Serializable]
 public class Data
 {
-    // Highest score achieved in Normal difficulty
+    // Highest score by difficulty (seconds survived / points)
     public float normalHighscore;
-
-    // Highest score achieved in Hard difficulty
     public float hardHighscore;
+
+    // Best streak = obstacles dodged in the highest scoring run (per difficulty)
+    public int normalBestStreak;
+    public int hardBestStreak;
+
+    // Fastest effective speed reached across all runs
+    public float fastestSpeedEver;
+
+    // Lifetime stats
+    public int totalObstaclesCleared; // all-time dodged obstacles
+    public float totalScoreEver;      // sum of all scores
+    public int totalRunsPlayed;       // how many runs started
 }

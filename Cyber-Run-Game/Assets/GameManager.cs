@@ -35,9 +35,9 @@ public class GameManager : MonoBehaviour
     #endregion
 
     [Header("Runtime State")]
-    public float currentScore = 0f;         // increases while playing
-    public Data data;                       // persistent data (e.g., highscores)
-    public bool isPlaying = false;          // game loop active flag
+    public float currentScore = 0f;   // increases while playing
+    public Data data;                 // persistent data (e.g., highscores, stats)
+    public bool isPlaying = false;    // game loop active flag
 
     [Header("Difficulty")]
     public DifficultyMode difficulty = DifficultyMode.Normal; // current difficulty (Normal by default)
@@ -45,6 +45,10 @@ public class GameManager : MonoBehaviour
     [Header("Events")]
     public UnityEvent onPlay = new UnityEvent();       // fired when game starts
     public UnityEvent onGameOver = new UnityEvent();   // fired on game over 
+
+    // Per-run stats (reset every StartGame)
+    private int obstaclesDodgedThisRun = 0;
+    private float maxSpeedThisRun = 0f;
 
     private void Update()
     {
@@ -54,15 +58,11 @@ public class GameManager : MonoBehaviour
     }
 
     // Called by UI before starting a run
-    public void SetNormalDifficulty()
+    public void ToggleDifficulty()
     {
-        difficulty = DifficultyMode.Normal;
-    }
-
-    // Called by UI before starting a run
-    public void SetHardDifficulty()
-    {
-        difficulty = DifficultyMode.Hard;
+        difficulty = (difficulty == DifficultyMode.Normal)
+            ? DifficultyMode.Hard
+            : DifficultyMode.Normal;
     }
 
     public void StartGame()
@@ -70,11 +70,18 @@ public class GameManager : MonoBehaviour
         // notify listeners that a new run started
         onPlay.Invoke();
 
-        // enable scoring and reset run score
+        // enable scoring and reset run state
         isPlaying = true;
         currentScore = 0f;
 
-        // switch to in-game music
+        // reset per-run stats
+        obstaclesDodgedThisRun = 0;
+        maxSpeedThisRun = 0f;
+
+        // lifetime: track runs
+        data.totalRunsPlayed++;
+
+        // start music for gameplay if using AudioManager
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.StopMusic();
@@ -87,14 +94,27 @@ public class GameManager : MonoBehaviour
         // notify listeners that the run ended
         onGameOver.Invoke();
 
-        // update and save highscore for the CURRENT difficulty if beaten
+        // lifetime: add this run's score to total
+        data.totalScoreEver += currentScore;
+
+        // update fastest speed ever if this run beat it
+        if (maxSpeedThisRun > data.fastestSpeedEver)
+            data.fastestSpeedEver = maxSpeedThisRun;
+
+        // update and save highscore / best streak for CURRENT difficulty
         float currentHigh = GetCurrentDifficultyHighscore();
-        if (currentHigh < currentScore)
+        if (currentScore > currentHigh)
         {
+            // new best score for this difficulty
             SetCurrentDifficultyHighscore(currentScore);
-            string saveString = JsonUtility.ToJson(data);
-            SaveSystem.Save("save", saveString);
+
+            // best streak = obstacles dodged in the highest scoring run
+            SetCurrentDifficultyBestStreak(obstaclesDodgedThisRun);
         }
+
+        // save everything
+        string saveString = JsonUtility.ToJson(data);
+        SaveSystem.Save("save", saveString);
 
         // stop scoring and freeze gameplay
         isPlaying = false;
@@ -105,6 +125,20 @@ public class GameManager : MonoBehaviour
             AudioManager.Instance.StopMusic();
             AudioManager.Instance.PlayMenuMusic();
         }
+    }
+
+    // Called whenever an obstacle successfully passes the player
+    public void RegisterObstacleDodged()
+    {
+        obstaclesDodgedThisRun++;
+        data.totalObstaclesCleared++;
+    }
+
+    // Called by Spawner / movement logic to sample the effective speed
+    public void RegisterSpeedSample(float effectiveSpeed)
+    {
+        if (effectiveSpeed > maxSpeedThisRun)
+            maxSpeedThisRun = effectiveSpeed;
     }
 
     private float GetCurrentDifficultyHighscore()
@@ -122,10 +156,21 @@ public class GameManager : MonoBehaviour
             data.normalHighscore = value;
     }
 
-    // helper display methods
-    public string PrettyScore() => Mathf.RoundToInt(currentScore).ToString();
+    private void SetCurrentDifficultyBestStreak(int value)
+    {
+        if (difficulty == DifficultyMode.Hard)
+            data.hardBestStreak = value;
+        else
+            data.normalBestStreak = value;
+    }
 
-    // for generic "current mode" use
+    // helper display methods
+
+    // current run score as int string
+    public string PrettyScore() =>
+        Mathf.RoundToInt(currentScore).ToString();
+
+    // current difficulty's best score
     public string PrettyHighscore() =>
         Mathf.RoundToInt(GetCurrentDifficultyHighscore()).ToString();
 
@@ -136,10 +181,22 @@ public class GameManager : MonoBehaviour
     public string PrettyHardHighscore() =>
         Mathf.RoundToInt(data.hardHighscore).ToString();
 
-    public void ToggleDifficulty()
-    {
-        difficulty = (difficulty == DifficultyMode.Normal)
-            ? DifficultyMode.Hard
-            : DifficultyMode.Normal;
-    }
+    // pretty accessors for stats (for your future stats UI)
+    public string PrettyNormalBestStreak() =>
+        data.normalBestStreak.ToString();
+
+    public string PrettyHardBestStreak() =>
+        data.hardBestStreak.ToString();
+
+    public string PrettyFastestSpeedEver() =>
+        data.fastestSpeedEver.ToString("0.0");
+
+    public string PrettyTotalObstaclesCleared() =>
+        data.totalObstaclesCleared.ToString();
+
+    public string PrettyTotalScoreEver() =>
+        Mathf.RoundToInt(data.totalScoreEver).ToString();
+
+    public string PrettyTotalRunsPlayed() =>
+        data.totalRunsPlayed.ToString();
 }
