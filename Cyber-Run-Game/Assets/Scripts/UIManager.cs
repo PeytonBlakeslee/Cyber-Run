@@ -201,4 +201,17 @@ public class UIManager : MonoBehaviour
         if (ScoreUI && ScoreUI.gameObject.activeSelf)
             ScoreUI.text = gm.PrettyScore();
     }
+
+    public void QuitButtonHandler()
+    {
+    // In the editor: stop play mode
+    #if UNITY_EDITOR
+    UnityEditor.EditorApplication.isPlaying = false;
+    #else
+    // In a build: close the game
+    Application.Quit();
+    #endif
+    }
+
+
 }
